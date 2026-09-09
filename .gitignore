@@ -1,0 +1,15 @@
+# 依赖与构建产物
+node_modules/
+dist/
+
+# 编辑器 / 工具产生的临时文件
+.history/
+.playwright-cli/
+*.log
+
+# 脚本生成的厂商列表（随时可重新生成）
+makers.txt
+makers.json
+
+.DS_Store
+Thumbs.db
