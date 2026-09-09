@@ -14,7 +14,7 @@
         <tbody>
           <tr v-for="d in shown" :key="d.actor + d.code">
             <td data-label="番号"><b class="mono">{{ d.code }}</b></td>
-            <td v-if="multi" data-label="人物" class="muted">{{ d.actor }}</td>
+            <td v-if="multi" data-label="人物" class="muted">{{ d.actorName }}</td>
             <td data-label="片长">{{ d.len }}</td>
             <td data-label="发行" class="mono dim">{{ d.date }}</td>
             <td data-label="厂商"><span class="tag" :style="makerStyle(d.maker)">{{ d.maker }}</span></td>

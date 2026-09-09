@@ -8,10 +8,12 @@ function loadActors() {
   const map = new Map()
   for (const [path, html] of Object.entries(dataFiles)) {
     const id = path.split('/').pop().replace(/\.html?$/i, '')
+    const name = id.replace(/^\d+/, '').trim() || id    // 显示名：去掉编号前缀
     const rows = []
     for (const [code, len, date, maker] of parseTable(html)) {
       rows.push({
         actor: id,
+        actorName: name,
         code,
         len,
         mins: toMins(len),
@@ -21,11 +23,9 @@ function loadActors() {
         norm: normCode(code)
       })
     }
-    if (rows.length) map.set(id, rows)
+    if (rows.length) map.set(id, { id, name, rows })
   }
-  return [...map.entries()]
-    .map(([id, rows]) => ({ id, rows }))
-    .sort((a, b) => a.id.localeCompare(b.id, 'zh'))
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh'))
 }
 
 export const actors = loadActors()
@@ -106,7 +106,7 @@ export const filtered = computed(() => {
   const k = state.sortKey
   rows = rows.slice().sort((a, b) => {
     const r = k === 'mins' ? a.mins - b.mins
-      : k === 'actor' ? String(a.actor).localeCompare(String(b.actor), 'zh')
+      : k === 'actor' ? String(a.actorName).localeCompare(String(b.actorName), 'zh')
         : String(a[k]).localeCompare(String(b[k]), 'ja')
     return r * state.sortDir
   })
@@ -182,6 +182,8 @@ watch(
 
 export function exportCsv() {
   const multi = selectedActors.value.length > 1
-  const name = state.pickedActors.length === 1 ? state.pickedActors[0] : 'export'
-  download(`${name}.csv`, toCsv(filtered.value, multi), 'text/csv;charset=utf-8')
+  const single = state.pickedActors.length === 1
+    ? (selectedActors.value[0]?.name || state.pickedActors[0])
+    : 'export'
+  download(`${single}.csv`, toCsv(filtered.value, multi), 'text/csv;charset=utf-8')
 }

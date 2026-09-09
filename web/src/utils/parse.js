@@ -47,7 +47,7 @@ export function normCode(code) {
 export function toCsv(rows, withActor) {
   const head = withActor ? ['人物', '番号', '片长', '发行', '厂商'] : ['番号', '片长', '发行', '厂商']
   const body = rows.map(d =>
-    withActor ? [d.actor, d.code, d.len, d.date, d.maker] : [d.code, d.len, d.date, d.maker]
+    withActor ? [d.actorName, d.code, d.len, d.date, d.maker] : [d.code, d.len, d.date, d.maker]
   )
   const csv = [head, ...body]
     .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))

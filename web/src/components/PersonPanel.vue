@@ -28,8 +28,8 @@
         :class="{ sel: state.pickedActors.includes(a.id) }"
         @click="pick(a.id)"
       >
-        <span class="ava" :style="avatarStyle(a.id)">{{ initial(a.id) }}</span>
-        <span class="name">{{ a.id }}</span>
+        <span class="ava" :style="avatarStyle(a.name)">{{ initial(a.name) }}</span>
+        <span class="name">{{ a.name }}</span>
         <span class="n">{{ a.rows.length }}</span>
         <a
           v-if="personUrl(a.id)"
@@ -66,7 +66,9 @@ import { personUrl, personId } from '../utils/person'
 
 const list = computed(() => {
   const kw = state.actorKw.trim().toLowerCase()
-  return kw ? actors.filter(a => a.id.toLowerCase().includes(kw)) : actors
+  return kw
+    ? actors.filter(a => a.name.toLowerCase().includes(kw) || a.id.toLowerCase().includes(kw))
+    : actors
 })
 
 const selectAll = () => {

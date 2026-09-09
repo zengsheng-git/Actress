@@ -30,7 +30,11 @@ import { personUrl } from '../utils/person'
 const currentLabel = computed(() => {
   const n = state.pickedActors.length
   if (!n) return '全部'
-  return n === 1 ? state.pickedActors[0] : `${n} 位`
+  if (n === 1) {
+    const a = actors.find(x => x.id === state.pickedActors[0])
+    return a ? a.name : state.pickedActors[0]
+  }
+  return `${n} 位`
 })
 
 /** 仅单人查看时给出来源链接 */
