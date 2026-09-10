@@ -10,7 +10,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { Plugin } from 'vite'
 import { parsePersonNode } from '../src/lib/parse'
-import { dataDir, hasProfile, importPerson, listDataFiles } from './data'
+import { dataDir, fetchWorkInfo, hasProfile, importPerson, listDataFiles } from './data'
 
 const MANIFEST_ID = 'virtual:people-manifest'
 const WORKS_ID = 'virtual:works-index'
@@ -86,6 +86,20 @@ export function peopleData(): Plugin {
 
       // 导入接口：从源站抓取人物页写入 data/（写文件后 watcher 自动刷新页面）
       server.middlewares.use((req, res, next) => {
+        if (req.url?.startsWith('/api/work') && req.method === 'GET') {
+          const code = new URL(req.url, 'http://localhost').searchParams.get('code') || ''
+          res.setHeader('content-type', 'application/json; charset=utf-8')
+          fetchWorkInfo(code.trim())
+            .then(info => {
+              if (info) res.end(JSON.stringify({ ok: true, ...info }))
+              else { res.statusCode = 404; res.end(JSON.stringify({ ok: false, message: '未找到该番号' })) }
+            })
+            .catch(e => {
+              res.statusCode = 502
+              res.end(JSON.stringify({ ok: false, message: e instanceof Error ? e.message : String(e) }))
+            })
+          return
+        }
         if (req.url !== '/api/import' || req.method !== 'POST') return next()
         let body = ''
         req.on('data', c => {
@@ -111,7 +125,10 @@ export function peopleData(): Plugin {
         })
       })
 
-      const reload = () => {
+      // 只响应 data/ 内的变动；封面缓存等其它文件（如 .cache）不触发整页刷新
+      const isDataFile = (file: string) => file.startsWith(dataDir + path.sep)
+      const reload = (file?: string) => {
+        if (file && !isDataFile(file)) return
         for (const mod of [MANIFEST_ID, WORKS_ID]) {
           const m = server.moduleGraph.getModuleById('\0' + mod)
           if (m) server.moduleGraph.invalidateModule(m)
