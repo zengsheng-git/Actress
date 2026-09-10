@@ -58,7 +58,9 @@ export default function Person() {
 
   const srcUrl = personUrl(person.pid)
   const infoEntries = Object.entries(person.info)
-  const hasCover = person.photos.length > 0
+  // 封面背景优先用照片，无照片时用头像，保证封面视觉统一
+  const coverSrc = person.photos[0] || person.avatar
+  const hasCover = Boolean(coverSrc)
   const years = person.rows.map(r => r.year).filter(Boolean).sort()
   const span = years.length ? (years[0] === years[years.length - 1] ? years[0] : `${years[0]} ~ ${years[years.length - 1]}`) : '-'
 
@@ -72,7 +74,7 @@ export default function Person() {
       <div className="card fade-up relative mb-4 overflow-hidden">
         {hasCover && (
           <div className="absolute inset-0">
-            <img src={person.photos[0]} alt="" className="size-full scale-110 object-cover object-[center_20%] blur-2xl" />
+            <img src={coverSrc} alt="" className="size-full scale-110 object-cover object-[center_20%] blur-2xl" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#10141f] via-[rgba(16,20,31,0.8)] to-[rgba(16,20,31,0.55)]" />
           </div>
         )}
