@@ -2,6 +2,7 @@ import { useFilterStore } from '../store'
 import { sortArrow } from '../lib/filter'
 import { makerBadgeStyle } from '../lib/color'
 import type { WorkRow } from '../lib/parse'
+import { useState } from 'react'
 
 type Row = WorkRow & { actorName?: string }
 
@@ -13,10 +14,49 @@ const CODE_SITES = [
   { k: 'JAV', title: 'JAVLibrary', url: (c: string) => `https://www.javlibrary.com/cn/vl_searchbyid.php?keyword=${encodeURIComponent(c)}` }
 ]
 
+function CopyBtn({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code)
+    } catch {
+      // 剪贴板 API 不可用（非安全上下文等）时退化为选区复制
+      const ta = document.createElement('textarea')
+      ta.value = code
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      ta.remove()
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1200)
+  }
+  return (
+    <button
+      type="button"
+      onClick={e => { e.stopPropagation(); copy() }}
+      title={copied ? '已复制' : `复制番号：${code}`}
+      className={`rounded border px-1 text-[10px] font-normal leading-4 transition-colors ${
+        copied
+          ? 'border-emerald-400/50 text-emerald-400'
+          : 'border-[var(--line)] text-[var(--faint)] hover:border-[var(--brand)] hover:text-[var(--brand-fg)]'
+      }`}
+    >
+      {copied ? '✓' : (
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block align-[-1px]">
+          <rect x="9" y="9" width="12" height="12" rx="2" />
+          <path d="M5 15V5a2 2 0 012-2h10" />
+        </svg>
+      )}
+    </button>
+  )
+}
+
 function CodeLinks({ code }: { code: string }) {
   return (
     <span className="flex flex-wrap items-center gap-x-1.5">
       {code}
+      <CopyBtn code={code} />
       {CODE_SITES.map(s => (
         <a
           key={s.k}
