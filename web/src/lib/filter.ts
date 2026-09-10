@@ -65,6 +65,11 @@ export function sortArrow(active: boolean, dir: SortDir): string {
   return active ? (dir > 0 ? ' ▲' : ' ▼') : ''
 }
 
+/** 分钟数 → 可读时长：>=120 分钟显示小时，否则显示分钟 */
+export function fmtMins(mins: number): string {
+  return mins >= 120 ? (mins / 60).toFixed(1) + ' 小时' : Math.round(mins) + ' 分钟'
+}
+
 export function toCsv(rows: (WorkRow & { actorName?: string })[], withActor: boolean): string {
   const head = withActor ? ['人物', '番号', '片长', '发行', '厂商'] : ['番号', '片长', '发行', '厂商']
   const body = rows.map(d =>

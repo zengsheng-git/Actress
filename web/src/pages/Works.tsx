@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import worksIndex from 'virtual:works-index'
 import { people } from 'virtual:people-manifest'
 import type { FlatRow } from '../lib/types'
-import { applyFilters, download, sortRows, toCsv } from '../lib/filter'
+import { applyFilters, download, fmtMins, sortRows, toCsv } from '../lib/filter'
 import { useFilterStore } from '../store'
 import FilterBar from '../components/FilterBar'
 import RecordTable from '../components/RecordTable'
@@ -55,7 +55,7 @@ export default function Works() {
 
       <div className="min-w-0 flex-1">
         {/* 概览 */}
-        <div className="fade-up mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="fade-up mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
           <div className="card !mb-0 flex items-center gap-2 px-3.5 py-2.5 sm:col-span-3 lg:col-span-1">
             <button className="btn !min-h-8 !px-2 !py-0.5 !text-[12px] lg:hidden" onClick={() => setDrawer(true)}>
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -74,6 +74,7 @@ export default function Works() {
             { k: '人物', v: s.pickedActors.length || people.length },
             { k: '基准记录', v: baseRows.length },
             { k: '筛选结果', v: filtered.length, hl: true },
+            { k: '总时长', v: fmtMins(filtered.reduce((s2, r) => s2 + r.mins, 0)), sm: true },
             { k: '厂商', v: new Set(baseRows.map(r => r.maker)).size },
             { k: '时间跨度', v: span, sm: true }
           ].map(t => (

@@ -10,6 +10,7 @@ import Gallery from '../components/Gallery'
 import VideoPlayer from '../components/VideoPlayer'
 import FilterBar from '../components/FilterBar'
 import RecordTable from '../components/RecordTable'
+import { DurationStats, MiniYearBars, TopMakers } from '../components/StatsPanel'
 
 export default function Person() {
   const { id } = useParams()
@@ -122,6 +123,25 @@ export default function Person() {
           <Description text={person.description} />
         </section>
       )}
+
+      {/* 统计：时长 / 年产出 / 合作厂商 */}
+      <section className="card fade-up mb-4 p-4 md:p-5">
+        <h2 className="mb-3 text-[13px] font-semibold tracking-wider text-[var(--muted)]">统计</h2>
+        <div className="grid gap-5 md:grid-cols-3">
+          <div>
+            <h3 className="mb-2 text-[11px] tracking-wider text-[var(--faint)]">时长</h3>
+            <DurationStats rows={person.rows} />
+          </div>
+          <div>
+            <h3 className="mb-2 text-[11px] tracking-wider text-[var(--faint)]">年产出</h3>
+            <MiniYearBars rows={person.rows} />
+          </div>
+          <div>
+            <h3 className="mb-2 text-[11px] tracking-wider text-[var(--faint)]">合作厂商 Top5</h3>
+            <TopMakers rows={person.rows} />
+          </div>
+        </div>
+      </section>
 
       {/* 照片墙 + 视频 */}
       {(person.photos.length > 0 || person.video) && (
