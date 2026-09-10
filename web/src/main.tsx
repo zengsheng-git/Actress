@@ -2,6 +2,7 @@ import { StrictMode, lazy, Suspense, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client';
 import { HashRouter, NavLink, Route, Routes } from 'react-router-dom'
 import './index.css'
+import ImportDialog from './components/ImportDialog'
 
 const Home = lazy(() => import('./pages/Home'))
 const Works = lazy(() => import('./pages/Works'))
@@ -43,6 +44,7 @@ function ThemeToggle() {
 }
 
 function TopBar() {
+  const [importOpen, setImportOpen] = useState(false)
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--topbar-bg)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3 md:px-6">
@@ -78,7 +80,15 @@ function TopBar() {
         </nav>
 
         <span className="grow" />
+        <button className="btn !min-h-8 !px-2.5" onClick={() => setImportOpen(true)} title="从源站导入人物页">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 4v11m0 0l-4-4m4 4l4-4" />
+            <path d="M4 19h16" />
+          </svg>
+          <span className="hidden sm:inline">导入</span>
+        </button>
         <ThemeToggle />
+        <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
       </div>
     </header>
   )
