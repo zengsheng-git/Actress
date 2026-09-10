@@ -129,13 +129,19 @@ function parseWithDom(html: string, id: string): PersonData {
     }
   }
 
-  // 介绍：<br> 转为换行，软换行由 tidyText 合并
+  // 介绍：<br> 转为换行，软换行由 tidyText 合并；innerHTML 路径需手动解码实体
   const descEl = doc.querySelector('p[itemprop="description"]')
   const description = descEl
     ? tidyText(
         descEl.innerHTML
           .replace(/<br\s*\/?>(\s*)/gi, '\n')
           .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
       )
     : ''
 

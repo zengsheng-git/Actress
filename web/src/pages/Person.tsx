@@ -58,6 +58,7 @@ export default function Person() {
 
   const srcUrl = personUrl(person.pid)
   const infoEntries = Object.entries(person.info)
+  const hasCover = person.photos.length > 0
   const years = person.rows.map(r => r.year).filter(Boolean).sort()
   const span = years.length ? (years[0] === years[years.length - 1] ? years[0] : `${years[0]} ~ ${years[years.length - 1]}`) : '-'
 
@@ -67,22 +68,22 @@ export default function Person() {
 
   return (
     <main className="mx-auto max-w-[1400px] px-4 pb-16 pt-4 md:px-6">
-      {/* 封面：照片做背景 + 渐变遮罩 */}
+      {/* 封面：照片做背景 + 渐变遮罩；无照片时回退普通卡片底 */}
       <div className="card fade-up relative mb-4 overflow-hidden">
-        {person.photos.length > 0 && (
+        {hasCover && (
           <div className="absolute inset-0">
             <img src={person.photos[0]} alt="" className="size-full scale-110 object-cover object-[center_20%] blur-2xl" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#10141f] via-[rgba(16,20,31,0.72)] to-[rgba(16,20,31,0.35)]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#10141f] via-[rgba(16,20,31,0.8)] to-[rgba(16,20,31,0.55)]" />
           </div>
         )}
         <div className="relative flex flex-col gap-4 p-5 md:flex-row md:items-end md:gap-6 md:p-7">
-          <Avatar name={person.name} src={person.avatar} size={104} className="!rounded-2xl ring-2 ring-white/15" />
+          <Avatar name={person.name} src={person.avatar} size={104} className="!rounded-2xl ring-2 ring-white/25" />
           <div className="min-w-0 md:pb-1">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="text-2xl font-bold tracking-wide text-white">{person.name}</h1>
+              <h1 className={`text-2xl font-bold tracking-wide ${hasCover ? 'text-white' : 'text-[var(--fg)]'}`}>{person.name}</h1>
               {srcUrl && (
                 <a href={srcUrl} target="_blank" rel="noopener"
-                  className="btn !min-h-7 !px-2 !py-0.5 !text-[12px] !text-white/75">
+                  className={`btn !min-h-7 !px-2 !py-0.5 !text-[12px] ${hasCover ? '!border-white/25 !bg-white/10 !text-white/85 hover:!bg-white/20' : ''}`}>
                   来源页
                   <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 5h5v5" /><path d="M19 5l-8 8" /><path d="M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4" />
@@ -90,10 +91,10 @@ export default function Person() {
                 </a>
               )}
             </div>
-            <p className="mt-1 text-[13px] text-[var(--fg-2)]">
-              <b className="text-white" style={{ fontVariantNumeric: 'tabular-nums' }}>{person.rows.length}</b> 条记录
-              <span className="mx-1.5 text-[var(--faint)]">·</span>时间跨度 {span}
-              {person.info['年龄'] && <><span className="mx-1.5 text-[var(--faint)]">·</span>{person.info['年龄']} 岁</>}
+            <p className={`mt-1 text-[13px] ${hasCover ? 'text-white/75' : 'text-[var(--fg-2)]'}`}>
+              <b className={hasCover ? 'text-white' : 'text-[var(--fg)]'} style={{ fontVariantNumeric: 'tabular-nums' }}>{person.rows.length}</b> 条记录
+              <span className={`mx-1.5 ${hasCover ? 'text-white/40' : 'text-[var(--faint)]'}`}>·</span>时间跨度 {span}
+              {person.info['年龄'] && <><span className={`mx-1.5 ${hasCover ? 'text-white/40' : 'text-[var(--faint)]'}`}>·</span>{person.info['年龄']} 岁</>}
             </p>
           </div>
         </div>
