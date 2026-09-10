@@ -10,6 +10,8 @@ export interface PersonMeta {
   photos: number
   video: boolean
   hasProfile: boolean
+  /** 又名/艺名列表（来自资料「又名」字段，按空白拆分） */
+  aliases: string[]
 }
 
 /** 跨人物记录（/works 用），在 WorkRow 基础上附带来源人物 */

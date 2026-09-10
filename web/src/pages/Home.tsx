@@ -7,9 +7,12 @@ export default function Home() {
 
   const list = useMemo(() => {
     const k = kw.trim().toLowerCase()
-    return k
-      ? people.filter(p => p.name.toLowerCase().includes(k) || p.id.toLowerCase().includes(k))
-      : people
+    if (!k) return people
+    return people.filter(p =>
+      p.name.toLowerCase().includes(k) ||
+      p.id.toLowerCase().includes(k) ||
+      p.aliases.some(a => a.toLowerCase().includes(k))
+    )
   }, [kw])
 
   const total = useMemo(() => people.reduce((s, p) => s + p.rows, 0), [])

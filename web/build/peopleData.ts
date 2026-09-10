@@ -42,7 +42,8 @@ export function peopleData(): Plugin {
           rows: person.rows.length,
           photos: person.photos.length,
           video: Boolean(person.video),
-          hasProfile: hasProfile(person)
+          hasProfile: hasProfile(person),
+          aliases: (person.info['又名'] || '').split(/\s+/).filter(Boolean)
         }))
         const loaders = parsed
           .map(({ person }) => `  ${JSON.stringify(person.id)}: () => import(${JSON.stringify(PERSON_PREFIX + person.id)})`)

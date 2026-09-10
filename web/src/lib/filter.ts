@@ -12,13 +12,18 @@ export interface Filter {
 export type SortKey = 'date' | 'code' | 'mins' | 'maker' | 'actor'
 export type SortDir = 1 | -1
 
+/** 搜索归一化：小写 + 去横线/下划线/空格，让 "KSB-117" 能命中 "ksbj117" 这类番号变体 */
+export function normSearch(s: string): string {
+  return String(s || '').toLowerCase().replace(/[-_\s]/g, '')
+}
+
 export function applyFilters<T extends WorkRow>(rows: T[], f: Filter): T[] {
-  const kw = f.kw.trim().toLowerCase()
+  const kw = normSearch(f.kw)
   let out = rows.filter(r =>
     (!f.makers.length || f.makers.includes(r.maker)) &&
     (!f.year || r.year === f.year) &&
     r.mins >= Number(f.minLen) &&
-    (!kw || r.code.toLowerCase().includes(kw) || r.maker.toLowerCase().includes(kw))
+    (!kw || normSearch(r.code).includes(kw) || normSearch(r.maker).includes(kw))
   )
   if (f.mergeBD) out = mergeBdRows(out)
   return out

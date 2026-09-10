@@ -15,8 +15,13 @@ export default function PersonPanel({ open, onClose }: { open?: boolean; onClose
   const [multi, setMulti] = useState(false)
   const [kw, setKw] = useState('')
 
-  const list = kw.trim()
-    ? people.filter(p => p.name.toLowerCase().includes(kw.trim().toLowerCase()) || p.id.toLowerCase().includes(kw.trim().toLowerCase()))
+  const k = kw.trim().toLowerCase()
+  const list = k
+    ? people.filter(p =>
+        p.name.toLowerCase().includes(k) ||
+        p.id.toLowerCase().includes(k) ||
+        p.aliases.some(a => a.toLowerCase().includes(k))
+      )
     : people
 
   /** 单击：只看这个人；再点一次已选中者则回到全部 */
