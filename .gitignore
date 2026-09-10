@@ -13,3 +13,7 @@ makers.json
 
 .DS_Store
 Thumbs.db
+
+# 会话与构建缓存
+.zcode/
+.vite/

@@ -1,0 +1,288 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #6d7cff;
+  --color-brand-2: #a78bfa;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+}
+
+/* ---------- 主题变量：默认深色，[data-theme="light"] 覆盖为浅色 ---------- */
+
+:root {
+  color-scheme: dark;
+
+  --bg: #0a0d14;
+  --bg-glow-1: rgba(109, 124, 255, 0.14);
+  --bg-glow-2: rgba(167, 139, 250, 0.1);
+  --panel: #10141f;
+  --panel-2: #161b29;
+  --line: rgba(148, 163, 184, 0.14);
+  --fg: #dbe2f0;
+  --fg-2: #aab4cc;
+  --muted: #8b94a7;
+  --faint: #5c6680;
+  --brand: #6d7cff;
+  --brand-2: #a78bfa;
+  --brand-soft: rgba(109, 124, 255, 0.12);
+  --brand-fg: #aab6ff;
+  --brand-fg-2: #cdd5ff;
+  --btn-bg: rgba(255, 255, 255, 0.04);
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --hover-strong: rgba(255, 255, 255, 0.1);
+  --topbar-bg: rgba(10, 13, 20, 0.78);
+  --title-1: #ffffff;
+  --title-2: #cdd5ff;
+  --title-3: #8b9bff;
+  --cover-bg: linear-gradient(160deg, #1b2133, #12162a);
+  --scroll-thumb: #2b3247;
+  --scroll-thumb-hover: #3a435e;
+  --shadow-card: 0 12px 32px -18px rgba(0, 0, 0, 0.55);
+  --tbl-head: #161b29;
+  --tbl-row-hover: rgba(109, 124, 255, 0.05);
+  --tbl-rowline: rgba(148, 163, 184, 0.08);
+  --maker-s: 60%;
+  --maker-bg: 16%;
+  --maker-fg: 72%;
+  --maker-border: 28%;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f3f5fa;
+  --bg-glow-1: rgba(91, 108, 255, 0.09);
+  --bg-glow-2: rgba(139, 92, 246, 0.07);
+  --panel: #ffffff;
+  --panel-2: #f6f8fc;
+  --line: rgba(15, 23, 42, 0.09);
+  --fg: #1a2233;
+  --fg-2: #45506b;
+  --muted: #7c8699;
+  --faint: #9aa3b5;
+  --brand: #4b63f0;
+  --brand-2: #7c5cf0;
+  --brand-soft: rgba(75, 99, 240, 0.09);
+  --brand-fg: #4353d0;
+  --brand-fg-2: #3a49c0;
+  --btn-bg: #ffffff;
+  --input-bg: #ffffff;
+  --hover-bg: rgba(15, 23, 42, 0.04);
+  --hover-strong: rgba(15, 23, 42, 0.07);
+  --topbar-bg: rgba(255, 255, 255, 0.8);
+  --title-1: #1a2233;
+  --title-2: #3a49c0;
+  --title-3: #4b63f0;
+  --cover-bg: linear-gradient(160deg, #e8ecf6, #dde3f2);
+  --scroll-thumb: #ccd3e0;
+  --scroll-thumb-hover: #b3bccd;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 28px -14px rgba(16, 24, 40, 0.18);
+  --tbl-head: #f6f8fc;
+  --tbl-row-hover: rgba(75, 99, 240, 0.05);
+  --tbl-rowline: rgba(15, 23, 42, 0.06);
+  --maker-s: 72%;
+  --maker-bg: 95%;
+  --maker-fg: 33%;
+  --maker-border: 85%;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background:
+    radial-gradient(1100px 480px at 8% -10%, var(--bg-glow-1) 0%, transparent 60%),
+    radial-gradient(900px 420px at 95% 0%, var(--bg-glow-2) 0%, transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- 通用组件（放入 components 层，保证 lg:hidden 等工具类可覆盖） ---------- */
+
+@layer components {
+
+.card {
+  background: linear-gradient(180deg, rgba(127, 140, 180, 0.05), rgba(127, 140, 180, 0.02)), var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  min-height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--btn-bg);
+  color: var(--fg-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  white-space: nowrap;
+}
+.btn:hover {
+  border-color: color-mix(in srgb, var(--brand) 50%, transparent);
+  color: var(--brand-fg);
+  background: var(--brand-soft);
+}
+.btn.on {
+  background: var(--brand-soft);
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+  color: var(--brand-fg);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #5b6cff, #8b5cf6);
+  border-color: transparent;
+  color: #fff;
+}
+.btn-primary:hover {
+  color: #fff;
+  filter: brightness(1.08);
+  background: linear-gradient(135deg, #5b6cff, #8b5cf6);
+}
+
+.input, select.input {
+  padding: 7px 11px;
+  min-height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--input-bg);
+  color: var(--fg);
+  font-size: 13px;
+  outline: none;
+  max-width: 100%;
+  transition: border-color 0.16s, box-shadow 0.16s;
+}
+.input:focus {
+  border-color: color-mix(in srgb, var(--brand) 60%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 15%, transparent);
+}
+select.input {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 8l3-3.5' fill='none' stroke='%238b94a7' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+select.input option {
+  background: var(--panel);
+  color: var(--fg);
+}
+
+.search-input {
+  padding-left: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b94a7' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 10px center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.mono { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.02em; }
+
+/* ---------- 表格 ---------- */
+
+.tblbox {
+  overflow: auto;
+  max-height: 66vh;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.tblbox table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.tblbox th, .tblbox td { padding: 10px 12px; text-align: left; }
+.tblbox th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--tbl-head);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+.tblbox th.sortable { cursor: pointer; user-select: none; }
+.tblbox th.sortable:hover { color: var(--brand-fg); }
+.tblbox td { border-bottom: 1px solid var(--tbl-rowline); }
+.tblbox tbody tr { transition: background 0.12s; }
+.tblbox tbody tr:hover { background: var(--tbl-row-hover); }
+.tblbox tbody tr:last-child td { border-bottom: none; }
+.tblbox td.num, .tblbox th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tblbox .clickable { cursor: pointer; }
+
+.bar {
+  height: 8px;
+  border-radius: 5px;
+  display: inline-block;
+  min-width: 3px;
+  background: linear-gradient(90deg, #5b6cff, #8b5cf6);
+}
+.bar-wrap { width: 190px; max-width: 38vw; display: inline-flex; }
+
+.fade-up { animation: fadeUp 0.35s ease both; }
+
+}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); background-clip: content-box; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ---------- 窄屏：表格转卡片 ---------- */
+@media (max-width: 720px) {
+  .tblbox { max-height: none; border: none; }
+  .tblbox table, .tblbox thead, .tblbox tbody, .tblbox tr, .tblbox th, .tblbox td { display: block; }
+  .tblbox thead { display: none; }
+  .tblbox tr {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin: 10px 2px;
+    padding: 4px 12px;
+    background: var(--panel-2);
+  }
+  .tblbox td {
+    border: none;
+    padding: 6px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    white-space: normal;
+  }
+  .tblbox td + td { border-top: 1px dashed var(--line); }
+  .tblbox td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+    flex: none;
+  }
+  .tblbox td[data-label="番号"] { font-size: 15px; font-weight: 600; }
+  .bar-wrap { width: 42vw; }
+}

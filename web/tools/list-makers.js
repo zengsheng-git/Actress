@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 /**
- * 扫描 data/ 下所有原始表格 html，输出厂商名称（去重）
+ * 扫描 data/ 下所有原始表格 html，输出厂商名称（去重）。
+ * 与前端共用同一套解析规则（src/lib/parse.ts 的 Node 实现）。
  *
  * 用法:
- *   node tools/list-makers.js                  去重结果写入 script/makers.txt（按名称排序）
- *   node tools/list-makers.js --count          附带出现次数，按次数降序
- *   node tools/list-makers.js --json           写入 script/makers.json
- *   node tools/list-makers.js --out a.txt      指定输出路径
- *   node tools/list-makers.js --actor 35大桥未久  只看某个人物
- *
- * 说明: 与页面共用同一套列定位规则（以表头「番号」为基准取 4 列）
+ *   node --experimental-strip-types tools/list-makers.js          去重结果写入 script/makers.txt（按名称排序）
+ *   node --experimental-strip-types tools/list-makers.js --count  附带出现次数，按次数降序
+ *   node --experimental-strip-types tools/list-makers.js --json   写入 script/makers.json
+ *   node --experimental-strip-types tools/list-makers.js --out a.txt      指定输出路径
+ *   node --experimental-strip-types tools/list-makers.js --actor 35大桥未久  只看某个人物
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parsePersonNode } from '../src/lib/parse.ts'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const dataDir = path.resolve(here, '..', '..', 'data')
@@ -38,52 +38,6 @@ function walk(dir) {
   return out
 }
 
-/** 表格 -> [[番号, 片长, 发行, 厂商], ...]（正则版，不依赖 DOM） */
-function parseTable(html) {
-  const rows = []
-  // 到下一个 </tr> 或下一个 <tr> 为止：兼容源码中未闭合的 <tr>（浏览器会自动补全）
-  const trRe = /<tr[^>]*>([\s\S]*?)(?=<\/tr\s*>|<tr[\s>])/gi
-  let m
-  while ((m = trRe.exec(html))) {
-    const cells = []
-    const cellRe = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi
-    let c
-    while ((c = cellRe.exec(m[1]))) {
-      cells.push(
-        c[1]
-          .replace(/<[^>]+>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-      )
-    }
-    if (cells.length) rows.push(cells)
-  }
-
-  let idx = null
-  for (const r of rows) {
-    const i = r.indexOf('番号')
-    if (i >= 0) { idx = [i, i + 1, i + 2, i + 3]; break }
-  }
-  if (!idx) {
-    for (const r of rows) {
-      if (r.length >= 5) { idx = [1, 2, 3, 4]; break }
-      if (r.length === 4) { idx = [0, 1, 2, 3]; break }
-    }
-  }
-  if (!idx) return []
-
-  const out = []
-  for (const r of rows) {
-    if (r.includes('番号')) continue
-    if (Math.max(...idx) >= r.length) continue
-    const rec = idx.map(i => r[i])
-    if (!rec[0]) continue
-    out.push(rec)
-  }
-  return out
-}
-
 /* ---------------- main ---------------- */
 
 const onlyActor = flagValue('--actor')
@@ -102,10 +56,10 @@ for (const file of files) {
   const actor = path.basename(file).replace(/\.html?$/i, '')
   if (onlyActor && actor !== onlyActor) continue
   usedFiles++
-  for (const rec of parseTable(fs.readFileSync(file, 'utf-8'))) {
+  for (const row of parsePersonNode(fs.readFileSync(file, 'utf-8'), actor).rows) {
     records++
-    const name = (rec[3] || '').trim()
-    if (!name) continue
+    const name = (row.maker || '').trim()
+    if (!name || name === '未标注') continue
     counts.set(name, (counts.get(name) || 0) + 1)
   }
 }
