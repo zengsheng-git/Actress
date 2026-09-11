@@ -155,7 +155,7 @@ function parseWithDom(html: string, id: string): PersonData {
   const videoSrc = videoEl?.querySelector('source')?.getAttribute('src') || ''
   const videoPoster = videoEl?.getAttribute('poster') || ''
 
-  // 表格：与 list-makers.js 相同的列定位规则
+  // 表格：按表头「番号」定位基准列
   const grid = [...doc.querySelectorAll('tr')].map(tr =>
     [...tr.children].map(c => c.textContent.replace(/\s+/g, ' ').trim())
   )
