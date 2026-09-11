@@ -7,9 +7,6 @@ dist/
 .playwright-cli/
 *.log
 
-# 脚本生成的厂商列表（随时可重新生成）
-makers.txt
-makers.json
 
 .DS_Store
 Thumbs.db
@@ -18,3 +15,8 @@ Thumbs.db
 .zcode/
 .vite/
 .cache/
+
+
+
+# JavBus 封面本地缓存（可随时重新生成）
+covers/

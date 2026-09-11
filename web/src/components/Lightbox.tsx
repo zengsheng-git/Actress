@@ -37,11 +37,16 @@ export default function Lightbox({
     <div
       className="fixed inset-0 z-50 flex flex-col bg-black/92 backdrop-blur-sm"
       onClick={onClose}
-      onTouchStart={e => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }}
+      onTouchStart={e => {
+        const t = e.touches[0]
+        if (t) touch.current = { x: t.clientX, y: t.clientY }
+      }}
       onTouchEnd={e => {
         if (!touch.current) return
-        const dx = e.changedTouches[0].clientX - touch.current.x
-        const dy = e.changedTouches[0].clientY - touch.current.y
+        const t = e.changedTouches[0]
+        if (!t) return
+        const dx = t.clientX - touch.current.x
+        const dy = t.clientY - touch.current.y
         if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)) (dx > 0 ? prev : next)()
         touch.current = null
       }}
