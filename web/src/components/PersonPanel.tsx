@@ -79,9 +79,6 @@ export default function PersonPanel({ open, onClose }: { open?: boolean; onClose
                   </svg>
                 </a>
               )}
-              <span className="shrink-0 text-[11px] text-[var(--faint)]" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {p.rows}
-              </span>
             </div>
           )
         })}
