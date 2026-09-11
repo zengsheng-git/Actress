@@ -49,6 +49,14 @@ function CodeLinks({ code }: { code: string }) {
     <span className="flex flex-wrap items-center gap-x-1.5">
       <b>{code}</b>
       <CopyBtn code={code} />
+      <a
+        href={`https://sukebei.nyaa.si/?q=${encodeURIComponent(code)}`}
+        target="_blank" rel="noopener"
+        title={`在 sukebei 搜索番号：${code}`}
+        className="rounded border border-[var(--line)] px-1 text-[10px] font-normal leading-4 text-[var(--faint)] transition-colors hover:border-[var(--brand)] hover:text-[var(--brand-fg)]"
+      >
+        磁力 ↗
+      </a>
     </span>
   )
 }
