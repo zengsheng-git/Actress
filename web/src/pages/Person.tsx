@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { loadPerson, people } from 'virtual:people-manifest'
 import type { PersonData } from '../lib/parse'
+import type { FlatRow } from '../lib/types'
 import { applyFilters, download, sortRows, toCsv } from '../lib/filter'
+import { getTsvRows, toFlatRows } from '../lib/javbusSource'
 import { personUrl } from '../lib/color'
 import { useFilterStore } from '../store'
 import Avatar from '../components/Avatar'
@@ -16,15 +18,20 @@ export default function Person() {
   const { id } = useParams()
   const meta = people.find(p => p.id === id)
   const [person, setPerson] = useState<PersonData | null>(null)
+  const [javbusRows, setJavbusRows] = useState<FlatRow[]>([])
+  const [javbusLoading, setJavbusLoading] = useState(false)
 
   useEffect(() => {
     let alive = true
     setPerson(null)
+    setJavbusRows([])
+    setJavbusLoading(false)
     if (id) loadPerson(id).then(p => { if (alive) setPerson(p) })
     return () => { alive = false }
   }, [id])
 
   const s = useFilterStore()
+  const isJavbus = s.dataSource === 'javbus'
 
   // 详情页不沿用 /works 的人物多选
   useEffect(() => {
@@ -32,13 +39,27 @@ export default function Person() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
+  // JavBus 数据源：按需加载该人物的 JSON（与 /works 共用同一份缓存）
+  useEffect(() => {
+    if (!id || !isJavbus) { setJavbusLoading(false); return }
+    let cancelled = false
+    setJavbusLoading(true)
+    getTsvRows([id]).then(datas => {
+      if (cancelled) return
+      setJavbusRows(datas.flatMap(toFlatRows))
+      setJavbusLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [id, isJavbus])
+
   const rows = useMemo(() => {
-    if (!person) return []
-    const filtered = applyFilters(person.rows, {
-      makers: s.pickedMakers, kw: s.kw, year: s.year, minLen: s.minLen, mergeBD: s.mergeBD
+    const base = isJavbus ? javbusRows : person?.rows ?? []
+    const filtered = applyFilters(base, {
+      makers: s.pickedMakers, kw: s.kw, year: s.year, minLen: s.minLen, mergeBD: s.mergeBD,
+      section: isJavbus ? s.section : ''
     })
     return sortRows(filtered, s.sortKey, s.sortDir)
-  }, [person, s.pickedMakers, s.kw, s.year, s.minLen, s.mergeBD, s.sortKey, s.sortDir])
+  }, [person, javbusRows, isJavbus, s.pickedMakers, s.kw, s.year, s.minLen, s.mergeBD, s.section, s.sortKey, s.sortDir])
 
   if (!meta) {
     return (
@@ -62,11 +83,14 @@ export default function Person() {
   // 封面背景优先用照片，无照片时用头像，保证封面视觉统一
   const coverSrc = person.photos[0] || person.avatar
   const hasCover = Boolean(coverSrc)
-  const years = person.rows.map(r => r.year).filter(Boolean).sort()
+  // 统计与计数跟随当前数据源（JavBus 源无记录时回退 0，不混用两个源的数据）
+  const baseRows = isJavbus ? javbusRows : person.rows
+  const statRows = baseRows.length ? baseRows : person.rows
+  const years = statRows.map(r => r.year).filter(Boolean).sort()
   const span = years.length ? (years[0] === years[years.length - 1] ? years[0] : `${years[0]} ~ ${years[years.length - 1]}`) : '-'
 
   const exportCsv = () => {
-    download(`${person.name}.csv`, toCsv(rows, false))
+    download(`${person.name}${isJavbus ? '.JavBus' : ''}.csv`, toCsv(rows, false))
   }
 
   return (
@@ -95,7 +119,9 @@ export default function Person() {
               )}
             </div>
             <p className={`mt-1 text-[13px] ${hasCover ? 'text-white/75' : 'text-[var(--fg-2)]'}`}>
-              <b className={hasCover ? 'text-white' : 'text-[var(--fg)]'} style={{ fontVariantNumeric: 'tabular-nums' }}>{person.rows.length}</b> 条记录
+              <b className={hasCover ? 'text-white' : 'text-[var(--fg)]'} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {isJavbus ? javbusRows.length : person.rows.length}
+              </b> 条记录
               <span className={`mx-1.5 ${hasCover ? 'text-white/40' : 'text-[var(--faint)]'}`}>·</span>时间跨度 {span}
               {person.info['年龄'] && <><span className={`mx-1.5 ${hasCover ? 'text-white/40' : 'text-[var(--faint)]'}`}>·</span>{person.info['年龄']} 岁</>}
             </p>
@@ -124,23 +150,34 @@ export default function Person() {
         </section>
       )}
 
-      {/* 统计：时长 / 年产出 / 合作厂商 */}
+      {/* 统计：时长 / 年产出 / 合作厂商（跟随数据源） */}
       <section className="card fade-up mb-4 p-4 md:p-5">
         <h2 className="mb-3 text-[13px] font-semibold tracking-wider text-[var(--muted)]">统计</h2>
-        <div className="grid gap-5 md:grid-cols-3">
-          <div>
-            <h3 className="mb-2 text-[11px] tracking-wider text-[var(--faint)]">时长</h3>
-            <DurationStats rows={person.rows} />
+        {isJavbus && javbusLoading ? (
+          <div className="flex items-center gap-2 text-[12px] text-[var(--muted)]">
+            <span className="size-3.5 animate-spin rounded-full border-2 border-[var(--line)] border-t-[#6d7cff]" />
+            正在加载 JavBus 数据…
           </div>
-          <div>
-            <h3 className="mb-2 text-[11px] tracking-wider text-[var(--faint)]">年产出</h3>
-            <MiniYearBars rows={person.rows} />
+        ) : isJavbus && !baseRows.length ? (
+          <div className="text-[12px] text-[var(--muted)]">
+            该人物还没有 JavBus 数据：可在导入后等待自动同步完成，或手动执行 <code className="mono">npm run works {id}</code>
           </div>
-          <div>
-            <h3 className="mb-2 text-[11px] tracking-wider text-[var(--faint)]">合作厂商 Top5</h3>
-            <TopMakers rows={person.rows} />
+        ) : (
+          <div className="grid gap-5 md:grid-cols-3">
+            <div>
+              <h3 className="mb-2 text-[11px] tracking-wider text-[var(--faint)]">时长</h3>
+              <DurationStats rows={statRows} />
+            </div>
+            <div>
+              <h3 className="mb-2 text-[11px] tracking-wider text-[var(--faint)]">年产出</h3>
+              <MiniYearBars rows={statRows} />
+            </div>
+            <div>
+              <h3 className="mb-2 text-[11px] tracking-wider text-[var(--faint)]">合作厂商 Top5</h3>
+              <TopMakers rows={statRows} />
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       {/* 照片墙 + 视频 */}
@@ -156,16 +193,49 @@ export default function Person() {
       )}
 
       {/* 作品 */}
-      <h2 className="fade-up mb-3 mt-6 text-[13px] font-semibold tracking-wider text-[var(--muted)]">
-        作品
-        <span className="ml-2 font-normal text-[var(--faint)]">
-          筛选结果 {rows.length} / {person.rows.length}
-          <span className="mx-1.5">·</span>
-          厂商 {new Set(rows.map(r => r.maker)).size} 个
-        </span>
-      </h2>
-      <div className="mb-3"><FilterBar baseRows={person.rows} onExport={exportCsv} /></div>
-      <RecordTable rows={rows} withActor={false} />
+      <div className="fade-up mb-3 mt-6 flex flex-wrap items-end justify-between gap-2">
+        <h2 className="text-[13px] font-semibold tracking-wider text-[var(--muted)]">
+          作品
+          <span className="ml-2 font-normal text-[var(--faint)]">
+            筛选结果 {rows.length} / {baseRows.length}
+            <span className="mx-1.5">·</span>
+            厂商 {new Set(rows.map(r => r.maker)).size} 个
+          </span>
+        </h2>
+        {/* 数据源切换（与 /works 同款样式） */}
+        <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--line)] bg-white/[0.03] p-1">
+          <button
+            className={`rounded-md px-2.5 py-1 text-[12px] transition-colors ${!isJavbus ? 'bg-[var(--brand-soft)] text-[var(--brand-fg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'}`}
+            onClick={() => s.setDataSource('fouroursonsinc')}
+          >
+            fouroursonsinc
+            <span className="ml-1.5 rounded bg-black/20 px-1 text-[10px]" style={{ fontVariantNumeric: 'tabular-nums' }}>{person.rows.length}</span>
+          </button>
+          <button
+            className={`rounded-md px-2.5 py-1 text-[12px] transition-colors ${isJavbus ? 'bg-[var(--brand-soft)] text-[var(--brand-fg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'}`}
+            onClick={() => s.setDataSource('javbus')}
+            title="切换到 JavBus 数据（需要先跑过 fetch-works 脚本）"
+          >
+            JavBus
+            {javbusRows.length > 0 && (
+              <span className="ml-1.5 rounded bg-black/20 px-1 text-[10px]" style={{ fontVariantNumeric: 'tabular-nums' }}>{javbusRows.length}</span>
+            )}
+          </button>
+        </div>
+      </div>
+      <div className="mb-3"><FilterBar baseRows={baseRows} showSection={isJavbus} onExport={exportCsv} /></div>
+      {isJavbus && javbusLoading && (
+        <div className="card mb-3 px-3.5 py-2.5 text-center text-[12px] text-[var(--muted)]">
+          <span className="mr-2 inline-block size-3 animate-spin rounded-full border-2 border-[var(--line)] border-t-[#6d7cff] align-[-1px]" />
+          正在加载 JavBus 数据…
+        </div>
+      )}
+      {isJavbus && !javbusLoading && !baseRows.length && (
+        <div className="card mb-3 px-3.5 py-2.5 text-center text-[12px] text-[var(--muted)]">
+          该人物还没有 JavBus 数据：可在导入后等待自动同步完成，或手动执行 <code className="mono">npm run works {id}</code>
+        </div>
+      )}
+      {!isJavbus || baseRows.length > 0 ? <RecordTable rows={rows} withActor={false} /> : null}
     </main>
   )
 }
