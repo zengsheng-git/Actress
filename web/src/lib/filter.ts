@@ -7,6 +7,8 @@ export interface Filter {
   year: string          // 空 = 全部
   minLen: number        // 0 = 全部
   mergeBD: boolean
+  /** 有码/无码：空 = 全部；仅 JavBus 数据源的行带 section 字段 */
+  section?: '' | 'censored' | 'uncensored'
 }
 
 export type SortKey = 'date' | 'code' | 'mins' | 'maker' | 'actor'
@@ -23,6 +25,7 @@ export function applyFilters<T extends WorkRow>(rows: T[], f: Filter): T[] {
     (!f.makers.length || f.makers.includes(r.maker)) &&
     (!f.year || r.year === f.year) &&
     r.mins >= Number(f.minLen) &&
+    (!f.section || (r as { section?: string }).section === f.section) &&
     (!kw || normSearch(r.code).includes(kw) || normSearch(r.maker).includes(kw))
   )
   if (f.mergeBD) out = mergeBdRows(out)

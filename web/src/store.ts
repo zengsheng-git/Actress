@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { SortDir, SortKey } from './lib/filter'
 
 export type WorksView = 'rows' | 'maker' | 'year'
+/** 有码/无码筛选：空 = 全部（仅 JavBus 数据源有此字段） */
+export type SectionFilter = '' | 'censored' | 'uncensored'
 
 interface FilterState {
   // /works 页：选中人物（空 = 全部）
@@ -12,11 +14,14 @@ interface FilterState {
   year: string
   minLen: number
   mergeBD: boolean
+  section: SectionFilter
   sortKey: SortKey
   sortDir: SortDir
   limit: number
   // /works 页视图
   view: WorksView
+  // 数据源：fouroursonsinc（默认，data/*.html）或 javbus（works-export/*.tsv）
+  dataSource: 'fouroursonsinc' | 'javbus'
 
   setPickedActors: (ids: string[]) => void
   toggleActor: (id: string) => void
@@ -26,9 +31,11 @@ interface FilterState {
   setYear: (y: string) => void
   setMinLen: (n: number) => void
   toggleMergeBD: () => void
+  setSection: (s: SectionFilter) => void
   setSort: (k: SortKey) => void
   setView: (v: WorksView) => void
   resetFilters: () => void
+  setDataSource: (s: 'fouroursonsinc' | 'javbus') => void
 }
 
 const LS_KEY = 'data-browser:v2'
@@ -48,10 +55,12 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   year: '',
   minLen: 0,
   mergeBD: false,
+  section: '',
   sortKey: 'date',
   sortDir: -1,
   limit: 100,
   view: 'rows',
+  dataSource: 'fouroursonsinc',
 
   setPickedActors: ids => {
     set({ pickedActors: ids, pickedMakers: [], limit: 100 })
@@ -78,6 +87,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   setYear: year => set({ year, limit: 100 }),
   setMinLen: minLen => set({ minLen, limit: 100 }),
   toggleMergeBD: () => set(s => ({ mergeBD: !s.mergeBD, limit: 100 })),
+  setSection: section => set({ section, limit: 100 }),
   setSort: key => {
     const { sortKey, sortDir } = get()
     set(
@@ -88,7 +98,8 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   },
   setView: view => set({ view }),
   resetFilters: () =>
-    set({ pickedMakers: [], kw: '', year: '', minLen: 0, mergeBD: false, sortKey: 'date', sortDir: -1, limit: 100, view: 'rows' })
+    set({ pickedMakers: [], kw: '', year: '', minLen: 0, mergeBD: false, section: '', sortKey: 'date', sortDir: -1, limit: 100, view: 'rows' }),
+  setDataSource: s => set({ dataSource: s })
 }))
 
 function persist() {

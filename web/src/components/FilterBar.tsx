@@ -1,22 +1,33 @@
+import { useMemo } from 'react'
 import { useFilterStore } from '../store'
 import { makerCounts, yearCounts } from '../lib/filter'
 import type { WorkRow } from '../lib/parse'
 import MultiSelect from './MultiSelect'
 
 /**
- * 筛选工具栏：人物多选（可选）+ 厂商多选 + 关键词 + 年份 + 时长 + 排序 + 合并BD + 重置 + 导出。
+ * 筛选工具栏：人物多选（可选）+ 厂商多选 + 关键词 + 年份 + 时长 + 有码/无码（仅 JavBus 源）+ 排序 + 合并BD + 重置 + 导出。
  * 年份选项从传入的基准行里推导（人物页 = 该人物全部记录；全部作品页 = 当前选中人物的记录）。
  */
 export default function FilterBar({
-  baseRows, showActorSort, onExport
+  baseRows, showActorSort, showSection, onExport
 }: {
   baseRows: WorkRow[]
   /** 显示“人物”排序选项（多人物对比时才有意义） */
   showActorSort?: boolean
+  /** 显示有码/无码筛选（仅 JavBus 数据源） */
+  showSection?: boolean
   onExport?: () => void
 }) {
   const s = useFilterStore()
   const years = yearCounts(baseRows).map(([y]) => y).reverse()
+  const sectionCounts = useMemo(() => {
+    let censored = 0, uncensored = 0
+    for (const r of baseRows) {
+      if ((r as { section?: string }).section === 'censored') censored++
+      else if ((r as { section?: string }).section === 'uncensored') uncensored++
+    }
+    return { '': censored + uncensored, censored, uncensored }
+  }, [baseRows])
 
   return (
     <div className="card fade-up relative z-10 p-4 md:p-5">
@@ -62,6 +73,27 @@ export default function FilterBar({
           {showActorSort && <option value="actor:1">人物 A→Z</option>}
         </select>
         <button className={`btn ${s.mergeBD ? 'on' : ''}`} onClick={s.toggleMergeBD}>合并 BD 重复版</button>
+        {showSection && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[12px] text-[var(--muted)]">类型</span>
+            <div className="flex items-center gap-1 rounded-lg border border-[var(--line)] p-0.5">
+              {([
+                ['', '全部'],
+                ['censored', '有码'],
+                ['uncensored', '无码']
+              ] as const).map(([v, label]) => (
+                <button
+                  key={v}
+                  className={`rounded-md px-2 py-0.5 text-[12px] transition-colors ${s.section === v ? 'bg-[var(--brand-soft)] text-[var(--brand-fg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'}`}
+                  onClick={() => s.setSection(v)}
+                >
+                  {label}
+                  <span className="ml-1 rounded bg-black/20 px-1 text-[10px]" style={{ fontVariantNumeric: 'tabular-nums' }}>{sectionCounts[v]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button className="btn" onClick={s.resetFilters}>重置</button>
         {onExport && (
           <button className="btn btn-primary" onClick={onExport}>
