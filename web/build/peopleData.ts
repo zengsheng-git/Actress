@@ -8,13 +8,18 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath, URL } from 'node:url'
 import type { Plugin } from 'vite'
 import { parsePersonNode } from '../src/lib/parse'
 import { dataDir, fetchWorkInfo, hasProfile, importPerson, listDataFiles } from './data'
+import { enqueueJavbusFetch, javbusTasks, setJavbusBroadcast } from './fetchWorks'
+
+const workspace = fileURLToPath(new URL('../..', import.meta.url))
 
 const MANIFEST_ID = 'virtual:people-manifest'
 const WORKS_ID = 'virtual:works-index'
 const PERSON_PREFIX = 'virtual:person/'
+const TSV_PREFIX = 'virtual:works-tsv/'
 
 export function peopleData(): Plugin {
   return {
@@ -23,6 +28,7 @@ export function peopleData(): Plugin {
     resolveId(id) {
       if (id === MANIFEST_ID || id === WORKS_ID) return '\0' + id
       if (id.startsWith(PERSON_PREFIX)) return '\0' + id
+      if (id.startsWith(TSV_PREFIX)) return '\0' + id
     },
 
     load(id) {
@@ -77,15 +83,39 @@ export function peopleData(): Plugin {
         const person = parsePersonNode(fs.readFileSync(file.abs, 'utf-8'), pid)
         return `export default ${JSON.stringify(person)};\n`
       }
+
+      /* ---- 单个演员的 JavBus 数据（按需加载 JSON） ---- */
+      if (id.startsWith('\0' + TSV_PREFIX)) {
+        const actorId = id.slice(1 + TSV_PREFIX.length)
+        const jsonPath = path.join(workspace, 'works-export', `${actorId}.json`)
+        if (fs.existsSync(jsonPath)) {
+          const data = fs.readFileSync(jsonPath, 'utf-8')
+          return `export default ${data};\n`
+        }
+        return `export default "";\n`
+      }
     },
 
     configureServer(server) {
+      // JavBus 抓取任务进度 → WebSocket 推送给浏览器（替代轮询）
+      setJavbusBroadcast(task => server.ws.send({ type: 'custom', event: 'javbus:task', data: { task } }))
+
       // chokidar 在 Windows 下对反斜杠 glob 支持差：目录用递归监视，glob 统一正斜杠
       server.watcher.add(dataDir)
       server.watcher.add(dataDir.split(path.sep).join('/') + '/**/*.html')
+      // 监视 JavBus TSV 输出目录（仅用于热重载）
+      const tsvDir = path.join(workspace, 'works-export')
+      server.watcher.add(tsvDir)
 
       // 导入接口：从源站抓取人物页写入 data/（写文件后 watcher 自动刷新页面）
       server.middlewares.use((req, res, next) => {
+        if (req.url?.startsWith('/api/javbus-status') && req.method === 'GET') {
+          // 前端轮询：JavBus 后台抓取任务进度（?actor= 只看某人物）
+          const actor = new URL(req.url, 'http://localhost').searchParams.get('actor') || undefined
+          res.setHeader('content-type', 'application/json; charset=utf-8')
+          res.end(JSON.stringify({ ok: true, tasks: javbusTasks(actor || undefined) }))
+          return
+        }
         if (req.url?.startsWith('/api/work') && req.method === 'GET') {
           const code = new URL(req.url, 'http://localhost').searchParams.get('code') || ''
           res.setHeader('content-type', 'application/json; charset=utf-8')
@@ -113,7 +143,9 @@ export function peopleData(): Plugin {
             const pid = String(parsed.id ?? '').match(/(\d+)/)?.[1]
             if (!pid) throw new Error('请提供人物 ID（数字）或人物页链接')
             const result = await importPerson(pid)
-            res.end(JSON.stringify({ ok: true, ...result }))
+            // 导入成功：后台自动抓取该人物的 JavBus 作品（不阻塞响应，完成后 works-export 监听自动刷新）
+            const task = enqueueJavbusFetch(result.id)
+            res.end(JSON.stringify({ ok: true, ...result, javbus: { started: task.status === 'running' } }))
           } catch (e) {
             res.statusCode = 400
             res.end(JSON.stringify({ ok: false, message: e instanceof Error ? e.message : String(e) }))
@@ -125,10 +157,11 @@ export function peopleData(): Plugin {
         })
       })
 
-      // 只响应 data/ 内的变动；封面缓存等其它文件（如 .cache）不触发整页刷新
-      const isDataFile = (file: string) => file.startsWith(dataDir + path.sep)
+      // 只响应 data/ 或 works-export/ 内的变动；其它（如 .cache）不触发整页刷新
+      const isWatched = (file: string) =>
+        file.startsWith(dataDir + path.sep) || file.startsWith(tsvDir + path.sep)
       const reload = (file?: string) => {
-        if (file && !isDataFile(file)) return
+        if (file && !isWatched(file)) return
         for (const mod of [MANIFEST_ID, WORKS_ID]) {
           const m = server.moduleGraph.getModuleById('\0' + mod)
           if (m) server.moduleGraph.invalidateModule(m)
@@ -136,6 +169,8 @@ export function peopleData(): Plugin {
         for (const f of listDataFiles()) {
           const m = server.moduleGraph.getModuleById('\0' + PERSON_PREFIX + f.id)
           if (m) server.moduleGraph.invalidateModule(m)
+          const t = server.moduleGraph.getModuleById('\0' + TSV_PREFIX + f.id)
+          if (t) server.moduleGraph.invalidateModule(t)
         }
         server.ws.send({ type: 'full-reload' })
       }

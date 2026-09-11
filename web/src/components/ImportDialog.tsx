@@ -1,23 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { JavbusStatusLine, useJavbusTask } from './JavbusStatus'
 
 interface ImportResult {
   ok: boolean
   message?: string
+  id?: string
   name?: string
   rows?: number
+  javbus?: { started: boolean }
 }
 
-/** 从源站导入人物页到 data/（依赖 vite dev server 的 POST /api/import） */
+/** 从源站导入人物页到 data/（依赖 vite dev server 的 POST /api/import）；成功后自动后台同步 JavBus 作品 */
 export default function ImportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
+  const [watchActor, setWatchActor] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
       setResult(null)
+      setWatchActor(null)
       setTimeout(() => inputRef.current?.focus(), 60)
     }
   }, [open])
@@ -28,6 +33,9 @@ export default function ImportDialog({ open, onClose }: { open: boolean; onClose
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
+
+  // 导入成功后：watchActor 非空时订阅该人物的 JavBus 抓取进度（WebSocket 推送，全局角标由 JavbusBadge 单独负责）
+  const javbusTask = useJavbusTask(Boolean(open && watchActor), watchActor)
 
   if (!open) return null
 
@@ -43,13 +51,19 @@ export default function ImportDialog({ open, onClose }: { open: boolean; onClose
       })
       const data: ImportResult = await r.json()
       setResult(data)
-      if (data.ok) setInput('')
+      if (data.ok) {
+        setInput('')
+        setWatchActor(data.id ?? null)
+      }
     } catch {
       setResult({ ok: false, message: '请求失败：请确认 dev server 正在运行' })
     } finally {
       setBusy(false)
     }
   }
+
+  const runningTask = javbusTask && javbusTask.status === 'running' ? javbusTask : null
+  const pct = runningTask && runningTask.total ? Math.min(100, Math.round((runningTask.done / runningTask.total) * 100)) : null
 
   return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" onClick={onClose}>
@@ -60,7 +74,7 @@ export default function ImportDialog({ open, onClose }: { open: boolean; onClose
         </div>
 
         <p className="mb-3 text-[12px] leading-relaxed text-[var(--muted)]">
-          输入源站人物 ID 或页面链接，自动抓取资料与作品列表存入 <code className="mono">data/</code>，页面随即自动刷新。
+          输入源站人物 ID 或页面链接，自动抓取资料与作品列表存入 <code className="mono">data/</code>，随后在后台同步 JavBus 作品（需要本地代理开启）。
         </p>
 
         <input
@@ -81,8 +95,19 @@ export default function ImportDialog({ open, onClose }: { open: boolean; onClose
           </div>
         )}
 
+        {runningTask && (
+          <div className="mt-2 rounded-lg border border-[var(--line)] px-3 py-2 text-[12px] text-[var(--muted)]">
+            <div className="flex items-center gap-2">
+              <span className="size-3 animate-spin rounded-full border-2 border-[var(--line)] border-t-[#6d7cff]" />
+              JavBus 同步中：{runningTask.stage}
+              {pct != null && `（${pct}%）`}
+            </div>
+          </div>
+        )}
+        {watchActor && <JavbusStatusLine task={javbusTask} />}
+
         <div className="mt-4 flex justify-end gap-2">
-          <button className="btn" onClick={onClose}>取消</button>
+          <button className="btn" onClick={onClose}>{runningTask ? '后台运行' : '取消'}</button>
           <button className="btn btn-primary min-w-[84px] justify-center" onClick={submit} disabled={busy || !input.trim()}>
             {busy ? (
               <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />

@@ -15,10 +15,7 @@ export default defineConfig({
     host: true,
     port: 5173,
     fs: { allow: [dirname, workspace] },
-    watch: {
-      // 番号封面缓存写入不应触发页面刷新
-      ignored: ['**/.cache/**']
-    }
+    watch: { ignored: ['**/.cache/**'] }
   },
   build: {
     outDir: 'dist',

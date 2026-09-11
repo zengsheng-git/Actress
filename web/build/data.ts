@@ -7,7 +7,7 @@ import path from 'node:path'
 import net from 'node:net'
 import { fileURLToPath, URL } from 'node:url'
 import { ProxyAgent, Agent, fetch as ufetch } from 'undici'
-import { parsePersonNode } from '../src/lib/parse'
+import { parsePersonNode } from '../src/lib/parse.ts'
 
 const workspace = fileURLToPath(new URL('../..', import.meta.url))
 export const dataDir = path.join(workspace, 'data')
@@ -87,7 +87,7 @@ async function javdbFetch(pathname: string): Promise<string> {
 }
 
 /** 同一代理池抓 JavBus（直连番号即详情页，无需登录，无需搜索） */
-async function javbusFetch(pathname: string): Promise<string> {
+export async function javbusFetch(pathname: string): Promise<string> {
   const d = await getDispatcher()
   const r = await ufetch('https://www.javbus.com' + pathname, {
     dispatcher: d,
@@ -128,10 +128,10 @@ async function fromJavBus(code: string): Promise<WorkInfo | null> {
     html.match(/<title>\s*([^<|]+)/)?.[1]?.trim() ||
     ''
   return {
-    cover: new URL(coverM[1], 'https://www.javbus.com').href,
+    cover: new URL(coverM[1] ?? '', 'https://www.javbus.com').href,
     url: 'https://www.javbus.com/' + encodeURIComponent(code),
     title,
-    source: 'javbus'
+    source: 'javbus' as const
   }
 }
 
@@ -184,7 +184,7 @@ export async function importPerson(id: string) {
     throw new Error('页面结构不符（该 ID 可能不存在）')
   }
   const titleM = html.match(/<title>([^<]*)<\/title>/i)
-  const rawName = (titleM ? titleM[1] : '').split(/[（(]/)[0].trim()
+  const rawName = ((titleM?.[1]) ?? '').split(/[（(]/)[0]?.trim() ?? ''
   if (!rawName) throw new Error('无法从页面标题提取人物名')
   const name = rawName.replace(/[\\/:*?"<>|\s]+/g, '')
   const pid = `${id}${name}`

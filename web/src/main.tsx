@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter, NavLink, Route, Routes } from 'react-router-dom'
 import './index.css'
 import ImportDialog from './components/ImportDialog'
+import { JavbusBadge } from './components/JavbusStatus'
 
 const Home = lazy(() => import('./pages/Home'))
 const Works = lazy(() => import('./pages/Works'))
@@ -115,6 +116,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="*" element={<Home />} />
           </Routes>
         </Suspense>
+        <JavbusBadge />
       </div>
     </HashRouter>
   </StrictMode>
