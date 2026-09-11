@@ -52,7 +52,7 @@ function CodeLinks({ code }: { code: string }) {
       <a
         href={`https://sukebei.nyaa.si/?q=${encodeURIComponent(code)}`}
         target="_blank" rel="noopener"
-        title={`在 sukebei 搜索番号：${code}`}
+        title={`在 sukebei 搜索番号：${code}（海外站点，需代理访问）`}
         className="rounded border border-[var(--line)] px-1 text-[10px] font-normal leading-4 text-[var(--faint)] transition-colors hover:border-[var(--brand)] hover:text-[var(--brand-fg)]"
       >
         磁力 ↗
