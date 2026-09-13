@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { loadPerson, people } from 'virtual:people-manifest'
+import { downloadSet, downloadNormSet } from 'virtual:download-set'
 import type { PersonData } from '../lib/parse'
 import type { FlatRow } from '../lib/types'
 import { applyFilters, download, sortRows, toCsv } from '../lib/filter'
@@ -56,10 +57,11 @@ export default function Person() {
     const base = isJavbus ? javbusRows : person?.rows ?? []
     const filtered = applyFilters(base, {
       makers: s.pickedMakers, kw: s.kw, year: s.year, minLen: s.minLen, mergeBD: s.mergeBD,
-      section: isJavbus ? s.section : ''
+      section: isJavbus ? s.section : '',
+      downloadFilter: s.downloadFilter, downloadSet, downloadNormSet
     })
     return sortRows(filtered, s.sortKey, s.sortDir)
-  }, [person, javbusRows, isJavbus, s.pickedMakers, s.kw, s.year, s.minLen, s.mergeBD, s.section, s.sortKey, s.sortDir])
+  }, [person, javbusRows, isJavbus, s.pickedMakers, s.kw, s.year, s.minLen, s.mergeBD, s.section, s.downloadFilter, s.sortKey, s.sortDir])
 
   if (!meta) {
     return (

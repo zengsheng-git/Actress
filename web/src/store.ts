@@ -4,6 +4,8 @@ import type { SortDir, SortKey } from './lib/filter'
 export type WorksView = 'rows' | 'maker' | 'year'
 /** 有码/无码筛选：空 = 全部（仅 JavBus 数据源有此字段） */
 export type SectionFilter = '' | 'censored' | 'uncensored'
+/** 下载状态筛选：all = 全部，downloaded = 仅看已下载，missing = 仅看未下载 */
+export type DownloadFilter = 'all' | 'downloaded' | 'missing'
 
 interface FilterState {
   // /works 页：选中人物（空 = 全部）
@@ -15,6 +17,8 @@ interface FilterState {
   minLen: number
   mergeBD: boolean
   section: SectionFilter
+  /** 下载状态筛选（依据 works-export/download.json 的 key 集合） */
+  downloadFilter: DownloadFilter
   sortKey: SortKey
   sortDir: SortDir
   limit: number
@@ -32,6 +36,7 @@ interface FilterState {
   setMinLen: (n: number) => void
   toggleMergeBD: () => void
   setSection: (s: SectionFilter) => void
+  setDownloadFilter: (d: DownloadFilter) => void
   setSort: (k: SortKey) => void
   setView: (v: WorksView) => void
   resetFilters: () => void
@@ -56,6 +61,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   minLen: 0,
   mergeBD: false,
   section: '',
+  downloadFilter: 'all',
   sortKey: 'date',
   sortDir: -1,
   limit: 100,
@@ -88,6 +94,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   setMinLen: minLen => set({ minLen, limit: 100 }),
   toggleMergeBD: () => set(s => ({ mergeBD: !s.mergeBD, limit: 100 })),
   setSection: section => set({ section, limit: 100 }),
+  setDownloadFilter: downloadFilter => set({ downloadFilter, limit: 100 }),
   setSort: key => {
     const { sortKey, sortDir } = get()
     set(
@@ -98,7 +105,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   },
   setView: view => set({ view }),
   resetFilters: () =>
-    set({ pickedMakers: [], kw: '', year: '', minLen: 0, mergeBD: false, section: '', sortKey: 'date', sortDir: -1, limit: 100, view: 'rows' }),
+    set({ pickedMakers: [], kw: '', year: '', minLen: 0, mergeBD: false, section: '', downloadFilter: 'all', sortKey: 'date', sortDir: -1, limit: 100, view: 'rows' }),
   setDataSource: s => set({ dataSource: s })
 }))
 

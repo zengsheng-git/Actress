@@ -9,6 +9,12 @@ export interface Filter {
   mergeBD: boolean
   /** 有码/无码：空 = 全部；仅 JavBus 数据源的行带 section 字段 */
   section?: '' | 'censored' | 'uncensored'
+  /** 下载状态：'all' = 全部，'downloaded' / 'missing' 必须配合 downloadSet 使用；缺省视为全部 */
+  downloadFilter?: 'all' | 'downloaded' | 'missing'
+  /** 已下载番号原值集合（大小写敏感）；未提供时视为全部命中 */
+  downloadSet?: ReadonlySet<string>
+  /** 已下载番号归一化集合（小写 + 去 -_/空格 后的值），用于兼容 "HEYZO-0783" 与 "heyzo-0783" */
+  downloadNormSet?: ReadonlySet<string>
 }
 
 export type SortKey = 'date' | 'code' | 'mins' | 'maker' | 'actor'
@@ -21,12 +27,18 @@ export function normSearch(s: string): string {
 
 export function applyFilters<T extends WorkRow>(rows: T[], f: Filter): T[] {
   const kw = normSearch(f.kw)
+  const dlFilter = f.downloadFilter || 'all'
+  const dlSet = f.downloadSet
+  const dlNormSet = f.downloadNormSet
+  const isHit = (code: string) =>
+    dlSet?.has(code) || dlNormSet?.has(normSearch(code)) || false
   let out = rows.filter(r =>
     (!f.makers.length || f.makers.includes(r.maker)) &&
     (!f.year || r.year === f.year) &&
     r.mins >= Number(f.minLen) &&
     (!f.section || (r as { section?: string }).section === f.section) &&
-    (!kw || normSearch(r.code).includes(kw) || normSearch(r.maker).includes(kw))
+    (!kw || normSearch(r.code).includes(kw) || normSearch(r.maker).includes(kw)) &&
+    (dlFilter === 'all' || !dlSet && !dlNormSet || isHit(r.code) === (dlFilter === 'downloaded'))
   )
   if (f.mergeBD) out = mergeBdRows(out)
   return out

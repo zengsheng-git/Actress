@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import worksIndex from 'virtual:works-index'
 import { people } from 'virtual:people-manifest'
+import { downloadSet, downloadNormSet } from 'virtual:download-set'
 import type { FlatRow } from '../lib/types'
 import { applyFilters, download, fmtMins, sortRows, toCsv } from '../lib/filter'
 import { getTsvRows, toFlatRows } from '../lib/javbusSource'
@@ -52,11 +53,12 @@ export default function Works() {
     () => sortRows(
       applyFilters(sourceBaseRows, {
         makers: s.pickedMakers, kw: s.kw, year: s.year, minLen: s.minLen, mergeBD: s.mergeBD,
-        section: isJavbus ? s.section : ''
+        section: isJavbus ? s.section : '',
+        downloadFilter: s.downloadFilter, downloadSet, downloadNormSet
       }),
       s.sortKey, s.sortDir
     ),
-    [sourceBaseRows, s.pickedMakers, s.kw, s.year, s.minLen, s.mergeBD, s.section, isJavbus, s.sortKey, s.sortDir]
+    [sourceBaseRows, s.pickedMakers, s.kw, s.year, s.minLen, s.mergeBD, s.section, s.downloadFilter, isJavbus, s.sortKey, s.sortDir]
   )
 
   const span = useMemo(() => {

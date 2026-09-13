@@ -20,6 +20,8 @@ const MANIFEST_ID = 'virtual:people-manifest'
 const WORKS_ID = 'virtual:works-index'
 const PERSON_PREFIX = 'virtual:person/'
 const TSV_PREFIX = 'virtual:works-tsv/'
+const DOWNLOAD_ID = 'virtual:download-set'
+const DOWNLOAD_FILE = path.join(workspace, 'works-export', 'download.json')
 
 export function peopleData(): Plugin {
   return {
@@ -27,6 +29,7 @@ export function peopleData(): Plugin {
 
     resolveId(id) {
       if (id === MANIFEST_ID || id === WORKS_ID) return '\0' + id
+      if (id === DOWNLOAD_ID) return '\0' + id
       if (id.startsWith(PERSON_PREFIX)) return '\0' + id
       if (id.startsWith(TSV_PREFIX)) return '\0' + id
     },
@@ -93,6 +96,21 @@ export function peopleData(): Plugin {
           return `export default ${data};\n`
         }
         return `export default "";\n`
+      }
+
+      /* ---- 已下载番号集合（来自 works-export/download.json） ---- */
+      if (id === '\0' + DOWNLOAD_ID) {
+        // 解析失败时直接抛错，避免被 try/catch 静默吞掉导致「已下载 0」
+        if (!fs.existsSync(DOWNLOAD_FILE)) {
+          return 'export const downloadSet = new Set([]);\nexport const downloadNormSet = new Set([]);\n'
+        }
+        const raw = JSON.parse(fs.readFileSync(DOWNLOAD_FILE, 'utf-8'))
+        const codes: string[] = raw && typeof raw === 'object' ? Object.keys(raw) : []
+        // 归一化集合：小写 + 去 -_/空格，让 "heyzo-0783" 与 "HEYZO-0783" 等变体视为同一番号
+        const norm = (s: string) => String(s).toLowerCase().replace(/[-_\s]/g, '')
+        const normCodes = codes.map(norm)
+        return `export const downloadSet = new Set(${JSON.stringify(codes)});\n` +
+          `export const downloadNormSet = new Set(${JSON.stringify(normCodes)});\n`
       }
     },
 
@@ -166,6 +184,8 @@ export function peopleData(): Plugin {
           const m = server.moduleGraph.getModuleById('\0' + mod)
           if (m) server.moduleGraph.invalidateModule(m)
         }
+        const dl = server.moduleGraph.getModuleById('\0' + DOWNLOAD_ID)
+        if (dl) server.moduleGraph.invalidateModule(dl)
         for (const f of listDataFiles()) {
           const m = server.moduleGraph.getModuleById('\0' + PERSON_PREFIX + f.id)
           if (m) server.moduleGraph.invalidateModule(m)

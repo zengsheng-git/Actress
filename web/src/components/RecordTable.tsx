@@ -1,10 +1,16 @@
 import { useFilterStore } from '../store'
-import { sortArrow } from '../lib/filter'
+import { normSearch, sortArrow } from '../lib/filter'
 import { makerBadgeStyle } from '../lib/color'
 import type { WorkRow } from '../lib/parse'
 import { useState } from 'react'
+import { downloadSet, downloadNormSet } from 'virtual:download-set'
 
 type Row = WorkRow & { actorName?: string; section?: 'censored' | 'uncensored' }
+
+/** 是否视为已下载：先按原值查一次（大小写一致），再用归一化集合兜底（兼容 HEYZO/heyzo 等变体） */
+function isDownloaded(code: string): boolean {
+  return downloadSet.has(code) || downloadNormSet.has(normSearch(code))
+}
 
 function CopyBtn({ code }: { code: string }) {
   const [copied, setCopied] = useState(false)
@@ -61,6 +67,31 @@ function CodeLinks({ code }: { code: string }) {
   )
 }
 
+/** 已下载/未下载标记：根据 works-export/download.json 的 key 集合判断 */
+function DownloadBadge({ downloaded }: { downloaded: boolean }) {
+  if (downloaded) {
+    return (
+      <span
+        title="已存在于 download.json"
+        className="ml-1.5 inline-flex items-center gap-0.5 rounded border border-emerald-400/40 px-1 text-[9px] font-normal leading-4 text-emerald-300"
+      >
+        <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" className="inline-block align-[-1px]">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+        已下载
+      </span>
+    )
+  }
+  return (
+    <span
+      title="不在 download.json 中"
+      className="ml-1.5 rounded border border-[var(--line)] px-1 text-[9px] font-normal leading-4 text-[var(--faint)]"
+    >
+      未下载
+    </span>
+  )
+}
+
 /**
  * 作品明细表：表头排序 + 「加载更多」分页。
  * withActor：多人物对比时显示人物列（点击跳到人物详情）。
@@ -90,13 +121,16 @@ export default function RecordTable({ rows, withActor }: { rows: Row[]; withActo
             </tr>
           </thead>
           <tbody>
-            {shown.map((d, i) => (
+            {shown.map((d, i) => {
+              const downloaded = isDownloaded(d.code)
+              return (
               <tr key={`${d.actorName || ''}${d.code}${i}`} className={(d as Row).section === 'uncensored' ? 'bg-rose-400/[0.04]' : ''}>
                 <td data-label="番号" className="mono font-semibold text-[var(--fg)]">
                   <CodeLinks code={d.code} />
                   {(d as Row).section === 'uncensored' && (
                     <span className="ml-1.5 rounded border border-rose-400/30 px-1 text-[9px] font-normal text-rose-300">无码</span>
                   )}
+                  <DownloadBadge downloaded={downloaded} />
                 </td>
                 {withActor && (
                   <td data-label="人物">
@@ -112,7 +146,8 @@ export default function RecordTable({ rows, withActor }: { rows: Row[]; withActo
                   <span className="chip" style={makerBadgeStyle(d.maker)}>{d.maker}</span>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
         {!rows.length && (

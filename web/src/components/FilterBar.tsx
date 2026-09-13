@@ -1,8 +1,14 @@
 import { useMemo } from 'react'
 import { useFilterStore } from '../store'
-import { makerCounts, yearCounts } from '../lib/filter'
+import { makerCounts, normSearch, yearCounts } from '../lib/filter'
 import type { WorkRow } from '../lib/parse'
 import MultiSelect from './MultiSelect'
+import { downloadSet, downloadNormSet } from 'virtual:download-set'
+
+/** 是否视为已下载：原值优先，未命中再用归一化兜底（兼容 HEYZO/heyzo 等变体） */
+function isDownloaded(code: string): boolean {
+  return downloadSet.has(code) || downloadNormSet.has(normSearch(code))
+}
 
 /**
  * 筛选工具栏：人物多选（可选）+ 厂商多选 + 关键词 + 年份 + 时长 + 有码/无码（仅 JavBus 源）+ 排序 + 合并BD + 重置 + 导出。
@@ -27,6 +33,14 @@ export default function FilterBar({
       else if ((r as { section?: string }).section === 'uncensored') uncensored++
     }
     return { '': censored + uncensored, censored, uncensored }
+  }, [baseRows])
+  const downloadCounts = useMemo(() => {
+    let dl = 0, miss = 0
+    for (const r of baseRows) {
+      if (isDownloaded(r.code)) dl++
+      else miss++
+    }
+    return { all: baseRows.length, downloaded: dl, missing: miss }
   }, [baseRows])
 
   return (
@@ -94,6 +108,26 @@ export default function FilterBar({
             </div>
           </div>
         )}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12px] text-[var(--muted)]">下载</span>
+          <div className="flex items-center gap-1 rounded-lg border border-[var(--line)] p-0.5">
+            {([
+              ['all', '全部'],
+              ['downloaded', '已下载'],
+              ['missing', '未下载']
+            ] as const).map(([v, label]) => (
+              <button
+                key={v}
+                className={`rounded-md px-2 py-0.5 text-[12px] transition-colors ${s.downloadFilter === v ? 'bg-[var(--brand-soft)] text-[var(--brand-fg)]' : 'text-[var(--muted)] hover:text-[var(--fg)]'}`}
+                onClick={() => s.setDownloadFilter(v)}
+                title={v === 'downloaded' ? '依据 works-export/download.json' : v === 'missing' ? '不在 download.json 中' : '全部'}
+              >
+                {label}
+                <span className="ml-1 rounded bg-black/20 px-1 text-[10px]" style={{ fontVariantNumeric: 'tabular-nums' }}>{downloadCounts[v]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <button className="btn" onClick={s.resetFilters}>重置</button>
         {onExport && (
           <button className="btn btn-primary" onClick={onExport}>
